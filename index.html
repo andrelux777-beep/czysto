@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>Czysta Liga - Profesjonalne sprzatanie</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f7fb; }
+        .page-wrapper { width: 100%; max-width: 100%; margin: 0; padding: 0; background-color: white; overflow-x: hidden; }
+
+        .blur-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 100, 200, 0.55); backdrop-filter: blur(10px); z-index: 2000; visibility: hidden; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+        .blur-overlay.active { visibility: visible; opacity: 1; pointer-events: auto; }
+        .sharp-and-big { transform: scale(1.08); transition: transform 0.2s ease; position: relative; z-index: 2001; display: block; }
+
+        .login-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 340px; background: white; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); z-index: 2100; visibility: hidden; opacity: 0; transition: all 0.25s ease; pointer-events: none; padding: 20px; font-family: 'Segoe UI', Arial, sans-serif; }
+        .login-modal.active { visibility: visible; opacity: 1; pointer-events: auto; }
+        .modal-close { position: absolute; top: 12px; right: 16px; font-size: 28px; font-weight: bold; color: #1e40af; cursor: pointer; background: none; border: none; line-height: 1; }
+        .modal-tabs { display: flex; gap: 16px; margin-bottom: 24px; margin-top: 8px; }
+        .tab-btn { background: none; border: none; font-size: 18px; font-weight: 600; padding: 6px 0; color: #64748b; cursor: pointer; position: relative; }
+        .tab-btn.active { color: #1e40af; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 3px; background: #1e40af; border-radius: 3px; }
+        .input-group { margin-bottom: 18px; }
+        .input-group label { display: block; font-size: 14px; font-weight: 600; color: #1e3a8a; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 16px; font-size: 15px; outline: none; background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s; }
+        input:focus, select:focus { border-color: #1e40af; }
+        input.highlight-error, select.highlight-error { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); background-color: #fee2e2; }
+        .login-submit-btn { width: 100%; background: #1e40af; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 8px; cursor: pointer; }
+        .error-message-below { text-align: center; margin-top: 16px; font-size: 13px; color: #dc2626; background: #fee2e2; padding: 8px; border-radius: 20px; display: none; }
+        .error-message-below.show { display: block; }
+
+        /* OKNO WYBORU TYPU KLIENTA */
+        .client-type-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3500; display: flex; flex-direction: column; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.3s ease; padding: 30px; gap: 24px; }
+        .client-type-overlay.active { visibility: visible; opacity: 1; }
+        .client-type-close { position: absolute; top: 20px; right: 24px; font-size: 28px; font-weight: bold; color: #1e40af; cursor: pointer; background: none; border: none; line-height: 1; }
+        .client-type-question { font-size: 22px; font-weight: 700; color: #1e3a8a; text-align: center; }
+        .client-type-big-btn { width: 100%; max-width: 320px; padding: 20px; border-radius: 16px; border: none; background: #1e40af; font-size: 18px; font-weight: 700; color: white; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .client-type-big-btn:hover { background: #1e3a8a; }
+
+        .order-page-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; flex-direction: column; visibility: hidden; opacity: 0; transition: opacity 0.2s ease; overflow-y: auto; padding: 20px; }
+        .order-page-overlay.active { visibility: visible; opacity: 1; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; }
+        .order-title-left { font-size: 20px; font-weight: bold; color: #1e40af; }
+        .close-order-btn { font-size: 28px; font-weight: bold; color: #1e40af; cursor: pointer; background: none; border: none; line-height: 1; }
+        .order-section { margin-top: 24px; }
+
+        /* PRZELACZNIK */
+        .subscription-toggle { display: flex; gap: 0; margin-bottom: 20px; background: #f1f5f9; border-radius: 12px; padding: 4px; position: relative; }
+        .subscription-toggle.highlight-error { border: 2px solid #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); background-color: #fee2e2; border-radius: 12px; }
+        .subscription-option { flex: 1; text-align: center; padding: 10px 8px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 10px; transition: all 0.2s; position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .subscription-option.active { background: #1e40af; color: white; box-shadow: 0 2px 8px rgba(30,64,175,0.3); }
+        .info-icon-small { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s; flex-shrink: 0; background: rgba(255,255,255,0.3); }
+        .subscription-option.active .info-icon-small { background: rgba(255,255,255,0.4); }
+        .subscription-option:not(.active) .info-icon-small { background: #cbd5e1; color: #64748b; }
+        .info-icon-small:hover { transform: scale(1.15); }
+
+        /* KALKULATOR */
+        .calculator-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 16px; padding: 16px; margin-bottom: 20px; display: none; }
+        .calculator-box.active { display: block; }
+        .calculator-title { font-size: 16px; font-weight: bold; color: #1e40af; margin-bottom: 16px; text-align: center; }
+        .calc-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+        .calc-row label { font-size: 14px; font-weight: 600; color: #1e3a8a; min-width: 80px; }
+        .calc-row select, .calc-row input { flex: 1; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; background: white; }
+        .price-display { text-align: center; margin-top: 16px; padding: 12px; background: #eef2ff; border-radius: 12px; display: none; }
+        .price-display.show { display: block; }
+        .price-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+        .price-original { font-size: 16px; color: #94a3b8; text-decoration: line-through; }
+        .price-discount-badge { display: inline-block; background: #22c55e; color: white; font-size: 12px; font-weight: bold; padding: 2px 10px; border-radius: 20px; }
+        .price-final { font-size: 22px; font-weight: bold; color: #1e40af; }
+        .price-divider { border-top: 1px solid #cbd5e1; margin: 8px 0; }
+        .price-total-label { font-size: 14px; font-weight: 600; color: #1e3a8a; }
+
+        /* ABONAMENT: DATY */
+        .subscription-dates-box { background: #fefce8; border: 1px solid #eab308; border-radius: 16px; padding: 16px; margin-bottom: 20px; display: none; }
+        .subscription-dates-box.active { display: block; }
+        .subscription-dates-box.highlight-error { border: 2px solid #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
+        .sub-dates-title { font-size: 15px; font-weight: bold; color: #1e3a8a; margin-bottom: 8px; }
+        .sub-date-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 10px; margin-bottom: 6px; }
+        .sub-date-item .date-label { font-size: 14px; color: #1e3a8a; font-weight: 500; }
+        .sub-date-item .date-value { font-size: 14px; color: #64748b; cursor: pointer; }
+        .sub-date-item .date-value.filled { color: #1e40af; font-weight: 600; }
+        .sub-date-progress { font-size: 13px; color: #64748b; text-align: center; margin-top: 8px; }
+
+        /* ABONAMENT: DODATKOWY PDF */
+        .subscription-pdf-box { display: none; margin-top: 16px; }
+        .subscription-pdf-box.active { display: block; }
+
+        .pdf-row { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 16px; padding: 12px 16px; margin-bottom: 20px; }
+        .pdf-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .pdf-icon { font-size: 24px; }
+        .pdf-name { font-size: 15px; font-weight: 600; color: #1e3a8a; word-break: break-word; }
+        .download-pdf-btn { background: #1e40af; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 12px; }
+        .confirm-label { font-size: 14px; font-weight: 600; color: #1e3a8a; margin-bottom: 6px; display: block; }
+        .terms-checkbox { display: flex; align-items: center; margin: 20px 0 24px; gap: 12px; }
+        .terms-checkbox input { width: 22px; height: 22px; cursor: pointer; accent-color: #1e40af; margin: 0; }
+        .terms-checkbox label { font-size: 14px; color: #1e3a8a; font-weight: 500; }
+        .terms-checkbox.highlight-error { border: 2px solid #dc2626; border-radius: 12px; padding: 10px; margin: 18px 0 22px; background-color: #fee2e2; }
+        .contact-header { font-size: 18px; font-weight: bold; color: #1e40af; margin: 20px 0 16px; }
+        .order-field { margin-bottom: 18px; }
+        .order-field label { display: block; font-size: 14px; font-weight: 600; color: #1e3a8a; margin-bottom: 6px; }
+
+        .date-picker-overlay { position: fixed; bottom: -100%; left: 0; width: 100%; height: 85%; background: white; border-radius: 30px 30px 0 0; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); z-index: 3100; transition: bottom 0.3s ease; display: flex; flex-direction: column; padding: 20px; }
+        .date-picker-overlay.open { bottom: 0; }
+        .date-picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .date-picker-title { font-size: 20px; font-weight: bold; color: #1e40af; }
+        .close-date-picker { font-size: 28px; font-weight: bold; color: #1e40af; cursor: pointer; background: none; border: none; }
+        .date-picker-content { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        .real-calendar { background: white; border-radius: 20px; border: 1px solid #cbd5e1; padding: 12px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .calendar-month-year { font-size: 18px; font-weight: bold; color: #1e40af; }
+        .calendar-nav { background: #1e40af; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .calendar-nav.disabled { background: #cbd5e1; cursor: not-allowed; opacity: 0.5; }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 12px; font-weight: bold; color: #1e3a8a; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { text-align: center; padding: 10px 0; border-radius: 40px; cursor: pointer; transition: 0.1s; background: #f8fafc; }
+        .calendar-day.today { border: 2px solid #1e40af; background: white; font-weight: bold; }
+        .calendar-day.available { background: #dbeafe; }
+        .calendar-day.booked { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+        .calendar-day.selected { background: #1e40af; color: white; font-weight: bold; }
+        .calendar-day.sub-selected { background: #60a5fa; color: #1e3a00; font-weight: bold; }
+        .calendar-day.other-month { color: #cbd5e1; background: #f1f5f9; cursor: default; }
+        .calendar-day.disabled { background: #f1f5f9; color: #cbd5e1; cursor: not-allowed; }
+        .hours-container { margin-top: 16px; border-top: 1px solid #cbd5e1; padding-top: 16px; }
+        .hours-title { font-size: 16px; font-weight: bold; color: #1e40af; margin-bottom: 12px; }
+        .hours-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .hour-btn { background: #dbeafe; border: none; padding: 10px; border-radius: 40px; font-size: 14px; font-weight: 600; color: #1e40af; cursor: pointer; text-align: center; }
+        .hour-btn.selected-hour { background: #1e40af; color: white; }
+        .select-date-btn { background: #1e40af; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+
+        .date-select-row { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+        .date-display { flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 16px; padding: 12px 14px; font-size: 15px; color: #1e3a8a; transition: border-color 0.2s, box-shadow 0.2s; }
+        .date-display.highlight-error { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); background-color: #fee2e2; }
+        .pick-date-btn { background: #1e40af; color: white; border: none; padding: 12px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        .order-buttons-row { display: flex; gap: 12px; margin: 30px 0 20px; }
+        .save-data-btn { flex: 1; background: #1e40af; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .submit-order-btn { flex: 1; background: #94a3b8; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: not-allowed; transition: background 0.2s, opacity 0.2s; opacity: 0.6; }
+        .submit-order-btn.active { background: #1e40af; cursor: pointer; opacity: 1; }
+
+        .confirmation-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background: white; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 4000; visibility: hidden; opacity: 0; transition: all 0.2s ease; pointer-events: none; padding: 24px 20px 20px; text-align: center; }
+        .confirmation-modal.active { visibility: visible; opacity: 1; pointer-events: auto; }
+        .confirmation-close { position: absolute; top: 12px; right: 16px; font-size: 24px; font-weight: bold; color: #1e40af; cursor: pointer; background: none; border: none; }
+        .confirmation-title { font-size: 22px; font-weight: bold; color: #1e40af; margin-bottom: 20px; }
+        .confirmation-widget-placeholder { border-radius: 16px; margin: 16px 0; overflow: hidden; }
+        .confirmation-widget-placeholder img { width: 100%; height: auto; display: block; border-radius: 16px; }
+        .confirmation-description { font-size: 14px; color: #334155; line-height: 1.5; margin-top: 12px; }
+
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
+        .left-group { display: flex; align-items: center; gap: 12px; }
+        .logo img { max-height: 85px; width: auto; display: block; }
+        .login-container { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+        .login-icon img { max-height: 20px; width: auto; }
+        .login-text { font-size: 9px; color: #1e3a8a; font-weight: 700; }
+        .burger-menu { cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 8px; }
+        .burger-menu span { width: 28px; height: 3px; background-color: #1e40af; border-radius: 3px; }
+        .bottom-menu { position: fixed; bottom: -100%; left: 0; width: 100%; background-color: white; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.15); transition: bottom 0.3s ease; z-index: 1000; padding: 20px 0; }
+        .bottom-menu.open { bottom: 0; }
+        .bottom-menu-items { display: flex; flex-direction: column; gap: 8px; }
+        .bottom-menu-items a { display: block; padding: 14px 24px; text-decoration: none; color: #1e3a8a; font-weight: 600; font-size: 16px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        .bottom-menu-items a.active { background-color: #eef2ff; border-left: 4px solid #1e40af; color: #1e40af; }
+        .bottom-menu-items .zamow-btn { background-color: #1e40af; color: white; border-radius: 8px; margin: 8px 16px; padding: 12px; border: none; }
+        .bottom-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; visibility: hidden; opacity: 0; transition: 0.2s; }
+        .bottom-menu-overlay.active { visibility: visible; opacity: 1; }
+
+        .hero-section { position: relative; width: 100%; }
+        .hero-image { width: 100%; position: relative; }
+        .hero-image img { width: 100%; height: auto; display: block; }
+        .hero-main-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 16px; pointer-events: none; }
+        .hero-title-line { font-size: clamp(20px, 6vw, 36px); font-weight: 800; line-height: 1.2; }
+        .dark-blue { color: #0a1f5e; }
+        .light-blue { color: #3b82f6; }
+        .hero-buttons-bottom { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; pointer-events: auto; }
+        .hero-buttons-bottom .btn { border: none; border-radius: 8px; padding: 8px 20px; font-size: clamp(12px, 3.5vw, 16px); font-weight: bold; cursor: pointer; min-width: 140px; text-align: center; white-space: nowrap; }
+        @media (max-width: 480px) { .hero-buttons-bottom .btn { padding: 6px 14px; min-width: 120px; font-size: 11px; } }
+        .hero-buttons-bottom .btn-primary { background-color: #1e40af; color: white; }
+        .hero-buttons-bottom .btn-secondary { background-color: #3b82f6; color: white; }
+        .hero-text-overlay { position: absolute; top: 20px; left: 20px; pointer-events: none; text-align: left; line-height: 1.3; }
+        .hero-title-large { font-size: clamp(20px, 6vw, 36px); font-weight: 800; line-height: 1.2; }
+        .hero-widget1-title { font-size: clamp(20px, 6vw, 36px); font-weight: 800; line-height: 1.2; }
+        .hero-widget1-title .dark-blue { color: #0a1f5e; }
+        .hero-widget1-title .light-blue { color: #3b82f6; }
+        .hero-widget2-title { font-size: clamp(20px, 6vw, 36px); font-weight: 800; line-height: 1.2; }
+        .hero-text-overlay2 { position: absolute; top: 20px; left: 20px; right: 20px; pointer-events: none; text-align: left; line-height: 1.3; }
+        .hero-text-overlay3 { position: absolute; top: 20px; left: 20px; right: 20px; pointer-events: none; }
+        .dynamic-content { background-color: white; padding: 0 12px; width: 100%; }
+        .full-blue-widget { background-color: #1e40af; margin: 16px 12px; padding: 30px 20px; border-radius: 20px; text-align: center; }
+        .full-blue-widget-text h2 { font-size: 28px; color: white; margin-bottom: 10px; }
+        .full-blue-widget-text p { font-size: 18px; color: white; margin-bottom: 20px; }
+        .full-blue-widget-button { background-color: white; color: #1e40af; border: none; border-radius: 8px; padding: 10px 24px; font-size: 16px; font-weight: bold; }
+        .services-vertical { display: flex; flex-direction: column; gap: 16px; margin: 16px 0 24px; }
+        .service-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; padding: 18px; }
+        .service-card h4 { font-size: 18px; font-weight: 700; color: #1e3a8a; margin-bottom: 8px; }
+        .service-card p { font-size: 14px; color: #334155; line-height: 1.4; margin-bottom: 16px; }
+        .service-btn { background-color: #1e40af; color: white; border: none; border-radius: 8px; padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .info-cards-grid { display: flex; flex-direction: column; gap: 16px; margin: 16px 0 24px; }
+        .info-card { background-color: #dbeafe; border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .info-card h4 { font-size: 18px; font-weight: 700; color: #1e3a8a; margin-bottom: 8px; }
+        .info-card p { font-size: 14px; color: #1e3a8a; line-height: 1.4; }
+        .white-frame-cards { display: flex; flex-direction: column; gap: 16px; margin: 16px 0 24px; }
+        .white-frame-card { background-color: white; border: 2px solid #1e40af; border-radius: 16px; padding: 18px; }
+        .white-frame-card h4 { font-size: 18px; font-weight: 700; color: #1e40af; margin-bottom: 8px; }
+        .white-frame-card p { font-size: 14px; color: #1e40af; line-height: 1.4; }
+        .price-table-wrapper { width: 100%; overflow-x: auto; margin: 16px 0; }
+        .price-table { min-width: 800px; width: 100%; border-collapse: collapse; border: 2px solid #1e40af; font-size: 11px; }
+        .price-table th, .price-table td { border: 2px solid #1e40af; padding: 8px 6px; text-align: center; vertical-align: middle; }
+        .price-table th { background-color: #f1f5f9; font-size: 10px; font-weight: 700; }
+        .price-table td.first-col { background-color: #cbdff2; font-weight: bold; text-align: left; color: #0f2b6d; }
+        .price-table td.chem-price { color: #1e3a8a; font-weight: 700; }
+        .price-table td.biochem-price { color: #2b6e3c; font-weight: 700; }
+        .price-table td.general-chem-price { color: #1e4a8a; font-weight: 700; }
+        .price-table td.general-biochem-price { color: #1a6e4a; font-weight: 700; }
+        .price-table th.col-chem { background-color: #cbdff2; color: #1e3a8a; }
+        .price-table th.col-biochem { background-color: #cfebdd; color: #1e5e3a; }
+        .price-table th.col-general-chem { background-color: #8fb3d9; color: #0a2a5e; }
+        .price-table th.col-general-biochem { background-color: #a8d5ba; color: #1a5a3a; }
+        .section-with-lines { font-size: 22px; margin: 20px 0 12px; display: flex; align-items: center; gap: 10px; color: #1e40af; font-weight: bold; }
+        .section-with-lines::before, .section-with-lines::after { content: ""; flex: 1; height: 2px; background-color: #1e40af; }
+        .price-description { font-size: 13px; text-align: center; margin-bottom: 8px; color: #1e40af; font-weight: 500; }
+        .accordion-container { margin: 16px 0; }
+        .accordion-item { border: 1px solid #1e40af; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+        .accordion-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: white; cursor: pointer; }
+        .accordion-title { font-size: 16px; font-weight: 700; color: #1e40af; margin: 0; flex: 1; }
+        .accordion-toggle { width: 30px; height: 30px; background: #1e40af; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #eef2ff; }
+        .accordion-content-inner { padding: 14px 16px; font-size: 13px; line-height: 1.5; }
+        .accordion-item.active .accordion-content { max-height: 600px; }
+        .about-widgets-container { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+        .about-widget { background: #eef2ff; border-left: 6px solid #1e40af; border-radius: 12px; padding: 14px 16px; opacity: 0; transform: translateY(15px); animation: fadeInUp 0.4s ease forwards; }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .widget-title { font-size: 18px; font-weight: 700; color: #1e3a8a; }
+        .widget-number { display: inline-block; background: #1e40af; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px; margin-right: 10px; }
+        .widget-description { font-size: 13px; line-height: 1.4; margin-top: 8px; color: #1e293b; }
+        .faq-header-section { margin: 16px 0 8px; }
+        .faq-title-wrapper { display: flex; align-items: center; gap: 12px; }
+        .faq-title-wrapper .blue-line { flex: 1; height: 2px; background: #1e40af; }
+        .faq-title { font-size: 22px; font-weight: bold; color: #1e40af; white-space: nowrap; }
+        .footer-section { padding: 12px 16px; background: white; border-top: 1px solid #e2e8f0; margin-top: 20px; }
+        .footer-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 11px; color: #1e40af; }
+        .under-construction { padding: 40px 16px; text-align: center; }
+        .biochemia-section, .cena-section { display: inline-flex; align-items: center; gap: 8px; background: #f0f4ff; border-radius: 30px; padding: 6px 14px; margin: 10px auto; font-size: 12px; cursor: pointer; }
+        .toggle-description { max-height: 0; overflow: hidden; transition: max-height 0.3s; background: #f9fafc; border-radius: 12px; margin: 8px 0; padding: 0 12px; }
+        .toggle-description.show { max-height: 300px; padding: 10px 12px; }
+        .info-icon { background: #1e40af; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+
+        .floating-message { position: fixed; bottom: 30px; left: 20px; right: 20px; text-align: center; padding: 12px; border-radius: 40px; font-size: 14px; font-weight: bold; z-index: 3200; box-shadow: 0 4px 12px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.2s ease; pointer-events: none; }
+        .floating-message.show { opacity: 1; }
+        .toast-error { background-color: #dc2626; color: white; }
+        .toast-warning { background-color: #eab308; color: #1e1a00; }
+        .toast-success { background-color: #22c55e; color: white; }
+        textarea { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 16px; font-size: 15px; outline: none; background: #f8fafc; font-family: inherit; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; }
+        textarea:focus { border-color: #1e40af; }
+        textarea.highlight-error { border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); background-color: #fee2e2; }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="navbar">
+        <div class="left-group">
+            <div class="logo"><img src="Logo.JPG" alt="Logo"></div>
+            <div class="login-container" id="loginTrigger">
+                <div class="login-icon"><img src="Account.JPG" alt="Konto"></div>
+                <div class="login-text" id="loginStatusText">Zaloguj sie</div>
+            </div>
+        </div>
+        <div class="burger-menu" onclick="toggleBottomMenu()"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="bottom-menu-overlay" id="menuOverlay" onclick="toggleBottomMenu()"></div>
+    <div class="bottom-menu" id="bottomMenu">
+        <div class="bottom-menu-items">
+            <a href="#" data-tab="home" onclick="switchTabFromMenu('home')">Strona glowna</a>
+            <a href="#" data-tab="services" onclick="switchTabFromMenu('services')">Uslugi i ceny</a>
+            <a href="#" data-tab="about" onclick="switchTabFromMenu('about')">O nas</a>
+            <a href="#" data-tab="faq" onclick="switchTabFromMenu('faq')">FAQ</a>
+            <a href="#" class="zamow-btn" id="orderFromMenuBtn">Zamow sprzatanie</a>
+        </div>
+    </div>
+
+    <div id="heroContainer" class="hero-section"></div>
+    <div id="dynamicContent" class="dynamic-content"></div>
+
+    <div class="full-blue-widget">
+        <div class="full-blue-widget-text"><h2>Potrzebujesz sprzatania?</h2><p>Skontaktuj sie z nami</p><button class="full-blue-widget-button" onclick="callNow()">Zadzwonic</button></div>
+    </div>
+
+    <div class="footer-section">
+        <div class="footer-links">
+            <span onclick="showInfo('Warszawa i okolice')">Warszawa i okolice</span>
+            <span onclick="showInfo('&copy; 2025 Czysta Liga')">&copy; 2025 Czysta Liga</span>
+        </div>
+    </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="login-modal">
+    <button class="modal-close" id="closeModalBtn">&times;</button>
+    <div class="modal-tabs"><button class="tab-btn active" data-mode="login">Zaloguj sie</button><button class="tab-btn" data-mode="register">Zarejestruj konto</button></div>
+    <div class="modal-body">
+        <div class="input-group"><label id="nameLabel">Wirtualne imie</label><input type="text" id="usernameInput" placeholder="Wprowadz swoje wirtualne imie"></div>
+        <div class="input-group"><label id="passLabel">Haslo</label><input type="text" id="passwordInput" placeholder="Wprowadz haslo"></div>
+        <button class="login-submit-btn" id="submitBtn">Zaloguj</button>
+        <div id="modalError" class="error-message-below"></div>
+    </div>
+</div>
+
+<!-- OKNO WYBORU TYPU KLIENTA -->
+<div id="clientTypeOverlay" class="client-type-overlay">
+    <button class="client-type-close" id="closeClientTypeBtn">&times;</button>
+    <div class="client-type-question">Kim jestes?</div>
+    <button class="client-type-big-btn" id="btnClientOsoba">Jestem osoba prywatna</button>
+    <button class="client-type-big-btn" id="btnClientFirma">Reprezentuje firme</button>
+</div>
+
+<!-- STRONA ZAMOWIENIA -->
+<div id="orderPage" class="order-page-overlay">
+    <div class="order-header">
+        <span class="order-title-left" id="orderTitle">Zamowic sprzatanie</span>
+        <button class="close-order-btn" id="closeOrderBtn">&times;</button>
+    </div>
+    <div class="order-section">
+        <div class="pdf-row"><div class="pdf-left"><span class="pdf-icon">&#128196;</span><span class="pdf-name">Regulamin swiadczenia uslug</span></div><button class="download-pdf-btn" id="downloadPdfBtn">Pobierz</button></div>
+        <label class="confirm-label">Potwierdz zapoznanie sie z dokumentem</label>
+        <input type="text" id="confirmTextInput" placeholder="Napisz: Potwierdzam" style="margin-bottom: 20px;">
+        <div class="terms-checkbox" id="termsCheckboxContainer"><input type="checkbox" id="acceptTermsCheckbox"><label for="acceptTermsCheckbox">Akceptuje warunki i regulamin opisane w niniejszym dokumencie</label></div>
+
+        <!-- PRZELACZNIK -->
+        <div class="subscription-toggle" id="subscriptionToggle">
+            <div class="subscription-option active" data-sub="single" id="subSingle">Jednorazowa usluga<span class="info-icon-small" onclick="event.stopPropagation();showSubscriptionInfo('single')">i</span></div>
+            <div class="subscription-option" data-sub="abonament" id="subAbonament">Abonament (6 uslug)<span class="info-icon-small" onclick="event.stopPropagation();showSubscriptionInfo('abonament')">i</span></div>
+        </div>
+
+        <!-- KALKULATOR OSOBA -->
+        <div class="calculator-box" id="calcOsoba">
+            <div class="calculator-title">Wybierz rodzaj sprzatania</div>
+            <div class="calc-row"><label>Liczba pokoi:</label><select id="roomsSelect"><option value="">-- wybierz --</option><option value="kawalerka">Kawalerka</option><option value="2pokoje">2 pokoje</option><option value="3pokoje">3 pokoje</option></select></div>
+            <div class="calc-row"><label>Typ:</label><select id="osobaTypSprzatania"><option value="">-- wybierz --</option><option value="powierzchniowe">Powierzchniowe</option><option value="generalne">Generalne (glebokie)</option></select></div>
+            <div class="calc-row"><label>Chemia:</label><select id="osobaChemia"><option value="">-- wybierz --</option><option value="chem">Chemia gospodarcza</option><option value="bio">Biochemia</option></select></div>
+            <div class="price-display" id="osobaPriceDisplay">
+                <div class="price-row"><span class="price-final">Cena za usluge: <span id="osobaPrice">0</span> zl</span></div>
+                <div id="osobaDiscountBlock" style="display:none;">
+                    <div class="price-row"><span class="price-original">Bez rabatu: <span id="osobaPriceOrig">0</span> zl</span><span class="price-discount-badge">-20%</span></div>
+                    <div class="price-divider"></div>
+                    <div class="price-row"><span class="price-total-label">Cena za 6 uslug ze znizka: <span style="color:#1e40af;font-weight:bold;" id="osobaTotalPrice">0</span> zl</span></div>
+                    <div class="price-row"><span class="price-original">Bez rabatu za 6 uslug: <span id="osobaTotalOrig">0</span> zl</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KALKULATOR FIRMA -->
+        <div class="calculator-box" id="calcFirma">
+            <div class="calculator-title">Wybierz rodzaj sprzatania</div>
+            <div class="calc-row"><label>Rodzaj:</label><select id="firmaRodzaj"><option value="">-- wybierz --</option><option value="biura">Biura</option><option value="gastronomia">Gastronomia</option><option value="warsztaty">Warsztaty</option><option value="hotele">Hotele</option></select></div>
+            <div class="calc-row"><label>Metry (m&sup2;):</label><input type="number" id="firmaMetry" placeholder="np. 50" min="1"></div>
+            <div class="calc-row"><label>Typ:</label><select id="firmaTypSprzatania"><option value="">-- wybierz --</option><option value="powierzchniowe">Powierzchniowe</option><option value="generalne">Generalne (glebokie)</option></select></div>
+            <div class="calc-row"><label>Chemia:</label><select id="firmaChemia"><option value="">-- wybierz --</option><option value="chem">Chemia gospodarcza</option><option value="bio">Biochemia</option></select></div>
+            <div class="price-display" id="firmaPriceDisplay">
+                <div class="price-row"><span class="price-final">Cena za usluge: <span id="firmaPrice">0</span> zl</span></div>
+                <div id="firmaDiscountBlock" style="display:none;">
+                    <div class="price-row"><span class="price-original">Bez rabatu: <span id="firmaPriceOrig">0</span> zl</span><span class="price-discount-badge">-20%</span></div>
+                    <div class="price-divider"></div>
+                    <div class="price-row"><span class="price-total-label">Cena za 6 uslug ze znizka: <span style="color:#1e40af;font-weight:bold;" id="firmaTotalPrice">0</span> zl</span></div>
+                    <div class="price-row"><span class="price-original">Bez rabatu za 6 uslug: <span id="firmaTotalOrig">0</span> zl</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABONAMENT: DATY -->
+        <div class="subscription-dates-box" id="subscriptionDatesBox">
+            <div class="sub-dates-title">Wybierz 6 terminow dla abonamentu:</div>
+            <div id="subDatesList"></div>
+            <div class="sub-date-progress" id="subDateProgress">Wybrano 0 z 6 terminow</div>
+        </div>
+
+        <!-- ABONAMENT: PDF -->
+        <div class="subscription-pdf-box" id="subscriptionPdfBox">
+            <div class="pdf-row"><div class="pdf-left"><span class="pdf-icon">&#128196;</span><span class="pdf-name">Regulamin abonamentu</span></div><button class="download-pdf-btn" id="downloadAbonamentPdfBtn">Pobierz</button></div>
+            <label class="confirm-label">Potwierdz zapoznanie sie z regulaminem abonamentu</label>
+            <input type="text" id="confirmAbonamentText" placeholder="Napisz: Potwierdzam" style="margin-bottom: 20px;">
+            <div class="terms-checkbox" id="termsAbonamentContainer"><input type="checkbox" id="acceptAbonamentTerms"><label for="acceptAbonamentTerms">Akceptuje warunki abonamentu opisane w dokumencie</label></div>
+        </div>
+
+        <div class="contact-header">Dane kontaktowe</div>
+        <div class="order-field"><label>Imie</label><input type="text" id="firstName" placeholder="Wpisz swoje imie"></div>
+        <div class="order-field"><label>Nazwisko</label><input type="text" id="lastName" placeholder="Wpisz swoje nazwisko"></div>
+        <div class="order-field"><label>Adres e-mail</label><input type="email" id="email" placeholder="example@domena.pl"></div>
+        <div class="order-field"><label>Adres zamieszkania</label><input type="text" id="address" placeholder="Ulica, numer, kod pocztowy, miasto"></div>
+        <div class="order-field"><label>Zyczenia <span style="font-weight:normal;font-size:12px;color:#64748b;">(opcjonalnie)</span></label><textarea id="orderNotes" rows="4" placeholder="Dodatkowe uwagi..."></textarea></div>
+
+        <div class="order-field" id="singleDateField">
+            <label>Wybierz date sprzatania</label>
+            <div class="date-select-row"><div class="date-display" id="selectedDateDisplay">Nie wybrano daty</div><button class="pick-date-btn" id="openDatePickerBtn">Wybierz date</button></div>
+        </div>
+
+        <div class="order-buttons-row">
+            <button class="save-data-btn" id="saveDataBtn">Zapamietaj dane</button>
+            <button class="submit-order-btn" id="submitOrderBtn">Oformuj zamowienie</button>
+        </div>
+    </div>
+</div>
+
+<!-- DATE PICKER -->
+<div id="datePickerOverlay" class="date-picker-overlay">
+    <div class="date-picker-header"><span class="date-picker-title" id="datePickerTitle">Wybierz dzien sprzatania</span><button class="close-date-picker" id="closeDatePickerBtn">&times;</button></div>
+    <div class="date-picker-content" id="datePickerContent"></div>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div id="confirmationModal" class="confirmation-modal">
+    <button class="confirmation-close" id="closeConfirmationBtn">&times;</button>
+    <div class="confirmation-title">Zamowienie zlozone!</div>
+    <div class="confirmation-widget-placeholder"><img src="Widget.jpg" alt="Widget"></div>
+    <div class="confirmation-description">Twoje zamowienie zostalo oformione. Potwierdzimy je e-mailem.<br>W razie pytan &ndash; oddzwonimy.</div>
+</div>
+
+<div id="blurModal" class="blur-overlay"></div>
+<div id="floatingToast" class="floating-message"></div>
+
+<script>
+    // CENNIK
+    const cenyOsoba = {
+        kawalerka: { powierzchniowe: { chem: 199, bio: 239 }, generalne: { chem: 349, bio: 399 } },
+        '2pokoje': { powierzchniowe: { chem: 279, bio: 329 }, generalne: { chem: 479, bio: 549 } },
+        '3pokoje': { powierzchniowe: { chem: 359, bio: 419 }, generalne: { chem: 599, bio: 679 } }
+    };
+    const cenyFirma = {
+        biura: { powierzchniowe: { chem: 7, bio: 9 }, generalne: { chem: 13, bio: 16 } },
+        gastronomia: { powierzchniowe: { chem: 9, bio: 11 }, generalne: { chem: 16, bio: 19 } },
+        warsztaty: { powierzchniowe: { chem: 8, bio: 10 }, generalne: { chem: 14, bio: 17 } },
+        hotele: { powierzchniowe: { chem: 6, bio: 8 }, generalne: { chem: 11, bio: 14 } }
+    };
+
+    let clientType = null, subscriptionType = 'single', calculatedPrice = null;
+    let subDates = [null, null, null, null, null, null];
+    let currentSubDateIndex = null, subSelectedDate = null, subSelectedHour = null;
+
+    let activeBlurTimeout = null, activePhotoId = null, currentTab = 'home';
+    let isLoggedIn = false, currentMode = 'login', toastTimeout = null;
+    let selectedDate = null, selectedHour = null, confirmationTimeout = null;
+    let saveButtonTimeout = null, anyFieldEdited = false;
+    const bookedDates = new Set(['15-06-2026', '20-06-2026', '25-06-2026']);
+
+    // Elementy DOM
+    const modal = document.getElementById('loginModal'), blurBg = document.getElementById('blurModal');
+    const loginTrigger = document.getElementById('loginTrigger'), closeModalBtn = document.getElementById('closeModalBtn');
+    const tabBtns = document.querySelectorAll('.tab-btn'), submitBtn = document.getElementById('submitBtn');
+    const usernameInput = document.getElementById('usernameInput'), passwordInput = document.getElementById('passwordInput');
+    const nameLabel = document.getElementById('nameLabel'), passLabel = document.getElementById('passLabel');
+    const modalError = document.getElementById('modalError'), loginStatusSpan = document.getElementById('loginStatusText');
+    const orderPageDiv = document.getElementById('orderPage'), closeOrderBtn = document.getElementById('closeOrderBtn');
+    const orderFromMenuBtn = document.getElementById('orderFromMenuBtn'), floatingToast = document.getElementById('floatingToast');
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn'), openDatePickerBtn = document.getElementById('openDatePickerBtn');
+    const datePickerOverlay = document.getElementById('datePickerOverlay'), closeDatePickerBtn = document.getElementById('closeDatePickerBtn');
+    const selectedDateDisplay = document.getElementById('selectedDateDisplay'), datePickerContent = document.getElementById('datePickerContent');
+    const saveDataBtn = document.getElementById('saveDataBtn'), submitOrderBtn = document.getElementById('submitOrderBtn');
+    const confirmationModalEl = document.getElementById('confirmationModal'), closeConfirmationBtn = document.getElementById('closeConfirmationBtn');
+    const termsCheckboxContainer = document.getElementById('termsCheckboxContainer');
+    const termsAbonamentContainer = document.getElementById('termsAbonamentContainer');
+    const clientTypeOverlay = document.getElementById('clientTypeOverlay'), datePickerTitle = document.getElementById('datePickerTitle');
+    const singleDateField = document.getElementById('singleDateField');
+    const subscriptionToggle = document.getElementById('subscriptionToggle');
+    const subscriptionDatesBox = document.getElementById('subscriptionDatesBox');
+    let calendarCurrentDate = new Date(), calendarMode = 'single', tempSelectedDate = null, tempSelectedHour = null;
+
+    // Generowanie listy dat dla abonamentu
+    function buildSubDatesList() {
+        const container = document.getElementById('subDatesList');
+        let html = '';
+        for (let i = 0; i < 6; i++) {
+            html += '<div class="sub-date-item"><span class="date-label">Termin ' + (i + 1) + ':</span><span class="date-value" data-index="' + i + '" onclick="openSubDatePicker(' + i + ')">-- wybierz --</span></div>';
+        }
+        container.innerHTML = html;
+    }
+    buildSubDatesList();
+
+    // OKNO WYBORU TYPU KLIENTA
+    function openClientTypeOverlay() {
+        if (!isLoggedIn) { showToast('Najpierw musisz sie zalogowac.', 'warning'); showModal(); return; }
+        clientTypeOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
+    }
+    function closeClientTypeOverlay() { clientTypeOverlay.classList.remove('active'); document.body.style.overflow = ''; }
+    function selectClientType(type) {
+        clientType = type; closeClientTypeOverlay(); clearOrderFormData();
+        document.getElementById('orderTitle').innerText = type === 'osoba' ? 'Zamowic sprzatanie &mdash; osoba prywatna' : 'Zamowic sprzatanie &mdash; firma';
+        document.getElementById('calcOsoba').classList.toggle('active', type === 'osoba');
+        document.getElementById('calcFirma').classList.toggle('active', type === 'firma');
+        orderPageDiv.classList.add('active'); document.body.style.overflow = 'hidden';
+        updateSubscriptionUI(); updateSubmitButtonState();
+    }
+
+    // PRZELACZNIK ABONAMENTU
+    function setSubscription(type) {
+        subscriptionType = type;
+        document.getElementById('subSingle').classList.toggle('active', type === 'single');
+        document.getElementById('subAbonament').classList.toggle('active', type === 'abonament');
+        subscriptionToggle.classList.remove('highlight-error');
+        updateSubscriptionUI(); recalculatePrice(); updateSubmitButtonState();
+    }
+    function updateSubscriptionUI() {
+        var isAb = subscriptionType === 'abonament';
+        subscriptionDatesBox.classList.toggle('active', isAb);
+        document.getElementById('subscriptionPdfBox').classList.toggle('active', isAb);
+        singleDateField.style.display = isAb ? 'none' : 'block';
+        if (!isAb) { subDates = [null, null, null, null, null, null]; updateSubDatesList(); }
+    }
+    function updateSubDatesList() {
+        var filled = 0;
+        for (var i = 0; i < 6; i++) {
+            var el = document.querySelector('.date-value[data-index="' + i + '"]');
+            if (el) {
+                if (subDates[i]) { el.innerText = subDates[i].date + ' ' + subDates[i].hour; el.classList.add('filled'); filled++; }
+                else { el.innerText = '-- wybierz --'; el.classList.remove('filled'); }
+            }
+        }
+        document.getElementById('subDateProgress').innerText = 'Wybrano ' + filled + ' z 6 terminow';
+    }
+    function openSubDatePicker(index) {
+        if (subscriptionType !== 'abonament') return;
+        currentSubDateIndex = index;
+        subSelectedDate = subDates[index] ? subDates[index].date : null;
+        subSelectedHour = subDates[index] ? subDates[index].hour : null;
+        calendarMode = 'subscription';
+        datePickerTitle.innerText = 'Wybierz termin ' + (index + 1) + ' z 6';
+        openDatePickerInternal();
+    }
+    function showSubscriptionInfo(type) {
+        if (type === 'single') showToast('Jednorazowa usluga &mdash; pojedyncze sprzatanie w wybranym terminie. Bez zobowiazan.', 'success');
+        else showToast('Abonament &mdash; 6 uslug ze znizka 20%. Wymaga rezerwacji 6 terminow. W przypadku przerwania obowiazuje oplata zgodnie z regulaminem (szczegoly w PDF).', 'warning');
+    }
+
+    // KALKULATOR
+    function recalculatePrice() { if (clientType === 'osoba') calculateOsobaPrice(); else if (clientType === 'firma') calculateFirmaPrice(); }
+    function getDiscount() { return subscriptionType === 'abonament' ? 0.8 : 1.0; }
+    
+    function calculateOsobaPrice() {
+        var rooms = document.getElementById('roomsSelect').value, typ = document.getElementById('osobaTypSprzatania').value, chemia = document.getElementById('osobaChemia').value;
+        if (!rooms || !typ || !chemia) { document.getElementById('osobaPriceDisplay').classList.remove('show'); calculatedPrice = null; updateSubmitButtonState(); return; }
+        var base = cenyOsoba[rooms][typ][chemia], disc = getDiscount(), final = Math.round(base * disc);
+        calculatedPrice = final;
+        var isDisc = subscriptionType === 'abonament';
+        document.getElementById('osobaPrice').innerText = final;
+        document.getElementById('osobaDiscountBlock').style.display = isDisc ? 'block' : 'none';
+        if (isDisc) {
+            document.getElementById('osobaPriceOrig').innerText = base;
+            document.getElementById('osobaTotalPrice').innerText = final * 6;
+            document.getElementById('osobaTotalOrig').innerText = base * 6;
+        }
+        document.getElementById('osobaPriceDisplay').classList.add('show');
+        anyFieldEdited = true; updateSaveButtonState(); updateSubmitButtonState();
+    }
+    function calculateFirmaPrice() {
+        var rodzaj = document.getElementById('firmaRodzaj').value, metry = parseInt(document.getElementById('firmaMetry').value);
+        var typ = document.getElementById('firmaTypSprzatania').value, chemia = document.getElementById('firmaChemia').value;
+        if (!rodzaj || !metry || metry < 1 || !typ || !chemia) { document.getElementById('firmaPriceDisplay').classList.remove('show'); calculatedPrice = null; updateSubmitButtonState(); return; }
+        var base = cenyFirma[rodzaj][typ][chemia] * metry, disc = getDiscount(), final = Math.round(base * disc);
+        calculatedPrice = final;
+        var isDisc = subscriptionType === 'abonament';
+        document.getElementById('firmaPrice').innerText = final;
+        document.getElementById('firmaDiscountBlock').style.display = isDisc ? 'block' : 'none';
+        if (isDisc) {
+            document.getElementById('firmaPriceOrig').innerText = base;
+            document.getElementById('firmaTotalPrice').innerText = final * 6;
+            document.getElementById('firmaTotalOrig').innerText = base * 6;
+        }
+        document.getElementById('firmaPriceDisplay').classList.add('show');
+        anyFieldEdited = true; updateSaveButtonState(); updateSubmitButtonState();
+    }
+    function isCalculatorComplete() {
+        if (!clientType) return false;
+        if (clientType === 'osoba') return document.getElementById('roomsSelect').value && document.getElementById('osobaTypSprzatania').value && document.getElementById('osobaChemia').value && calculatedPrice !== null;
+        else { var m = parseInt(document.getElementById('firmaMetry').value); return document.getElementById('firmaRodzaj').value && !isNaN(m) && m >= 1 && document.getElementById('firmaTypSprzatania').value && document.getElementById('firmaChemia').value && calculatedPrice !== null; }
+    }
+
+    // FORMULARZ
+    function removeAllHighlights() {
+        document.querySelectorAll('.highlight-error').forEach(function(e) { e.classList.remove('highlight-error'); });
+        if (termsCheckboxContainer) termsCheckboxContainer.classList.remove('highlight-error');
+        if (termsAbonamentContainer) termsAbonamentContainer.classList.remove('highlight-error');
+        if (selectedDateDisplay) selectedDateDisplay.classList.remove('highlight-error');
+        if (subscriptionToggle) subscriptionToggle.classList.remove('highlight-error');
+        if (subscriptionDatesBox) subscriptionDatesBox.classList.remove('highlight-error');
+    }
+    function isFormComplete() {
+        var fn = document.getElementById('firstName').value.trim(), ln = document.getElementById('lastName').value.trim();
+        var em = document.getElementById('email').value.trim(), ad = document.getElementById('address').value.trim();
+        var ct = document.getElementById('confirmTextInput').value.trim(), tc = document.getElementById('acceptTermsCheckbox').checked;
+        var isAb = subscriptionType === 'abonament';
+        var hasDates = isAb ? subDates.every(function(d) { return d !== null; }) : (selectedDate !== null && selectedHour !== null);
+        var hasAbConfirm = isAb ? (document.getElementById('confirmAbonamentText').value.trim() === 'Potwierdzam' && document.getElementById('acceptAbonamentTerms').checked) : true;
+        return clientType !== null && isCalculatorComplete() && fn && ln && em && ad && ct === 'Potwierdzam' && tc && hasDates && hasAbConfirm;
+    }
+    function updateSubmitButtonState() {
+        if (isFormComplete()) { submitOrderBtn.classList.add('active'); submitOrderBtn.style.cursor = 'pointer'; submitOrderBtn.disabled = false; }
+        else { submitOrderBtn.classList.remove('active'); submitOrderBtn.style.cursor = 'not-allowed'; submitOrderBtn.disabled = false; }
+    }
+    function getMissingFieldsList() {
+        var m = [];
+        if (!clientType) m.push('Wybor typu klienta');
+        if (!isCalculatorComplete()) m.push('Parametry sprzatania');
+        if (subscriptionType === 'abonament' && !subDates.every(function(d) { return d; })) m.push('Wszystkie 6 terminow');
+        if (subscriptionType !== 'abonament' && (!selectedDate || !selectedHour)) m.push('Data i godzina');
+        if (!document.getElementById('firstName').value.trim()) m.push('Imie');
+        if (!document.getElementById('lastName').value.trim()) m.push('Nazwisko');
+        if (!document.getElementById('email').value.trim()) m.push('Adres e-mail');
+        if (!document.getElementById('address').value.trim()) m.push('Adres zamieszkania');
+        if (document.getElementById('confirmTextInput').value.trim() !== 'Potwierdzam') m.push('Potwierdzenie "Potwierdzam"');
+        if (!document.getElementById('acceptTermsCheckbox').checked) m.push('Akceptacja regulaminu');
+        if (subscriptionType === 'abonament') {
+            if (document.getElementById('confirmAbonamentText').value.trim() !== 'Potwierdzam') m.push('Potwierdzenie abonamentu');
+            if (!document.getElementById('acceptAbonamentTerms').checked) m.push('Akceptacja regulaminu abonamentu');
+        }
+        return m;
+    }
+    function highlightMissingFields() {
+        removeAllHighlights();
+        if (!document.getElementById('firstName').value.trim()) document.getElementById('firstName').classList.add('highlight-error');
+        if (!document.getElementById('lastName').value.trim()) document.getElementById('lastName').classList.add('highlight-error');
+        if (!document.getElementById('email').value.trim()) document.getElementById('email').classList.add('highlight-error');
+        if (!document.getElementById('address').value.trim()) document.getElementById('address').classList.add('highlight-error');
+        if (document.getElementById('confirmTextInput').value.trim() !== 'Potwierdzam') document.getElementById('confirmTextInput').classList.add('highlight-error');
+        if (!document.getElementById('acceptTermsCheckbox').checked) termsCheckboxContainer.classList.add('highlight-error');
+        if (subscriptionType !== 'abonament' && (!selectedDate || !selectedHour)) selectedDateDisplay.classList.add('highlight-error');
+        if (subscriptionType === 'abonament') {
+            if (!subDates.every(function(d) { return d; })) subscriptionDatesBox.classList.add('highlight-error');
+            if (document.getElementById('confirmAbonamentText').value.trim() !== 'Potwierdzam') document.getElementById('confirmAbonamentText').classList.add('highlight-error');
+            if (!document.getElementById('acceptAbonamentTerms').checked) termsAbonamentContainer.classList.add('highlight-error');
+        }
+    }
+    function showMissingFieldsMessage() { var m = getMissingFieldsList(); if (m.length) showToast('Nie wypelniono: ' + m.join(', '), 'error'); }
+
+    // KALENDARZ
+    function formatDatePL(d) { return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + d.getFullYear(); }
+    function parseDatePL(s) { var parts = s.split('-'); return new Date(+parts[2], +parts[1]-1, +parts[0]); }
+    function getTodayInPoland() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+    function getTomorrowInPoland() { var t = getTodayInPoland(); t.setDate(t.getDate()+1); return t; }
+    function isDateInPast(s) { return parseDatePL(s) < getTodayInPoland(); }
+    function isDateMoreThan3Months(s) { var t = getTodayInPoland(); t.setMonth(t.getMonth()+3); return parseDatePL(s) > t; }
+    function isDateAvailable(s) { return !isDateInPast(s) && !isDateMoreThan3Months(s) && !bookedDates.has(s); }
+    function generateHours() { var h = []; for (var i = 8; i <= 18; i++) { h.push(String(i).padStart(2, '0') + ':00'); if (i !== 18) h.push(String(i).padStart(2, '0') + ':30'); } return h; }
+
+    function renderCalendar() {
+        var y = calendarCurrentDate.getFullYear(), m = calendarCurrentDate.getMonth();
+        var fd = new Date(y, m, 1), sw = fd.getDay(), dim = new Date(y, m+1, 0).getDate();
+        var today = getTodayInPoland(), cp = (new Date(y, m) > new Date(today.getFullYear(), today.getMonth()));
+        var h = '<div class="real-calendar"><div class="calendar-header"><button class="calendar-nav ' + (!cp ? 'disabled' : '') + '" id="prevMonthBtn" ' + (!cp ? 'disabled' : '') + '>&lt;</button><span class="calendar-month-year">' + fd.toLocaleString('pl-PL', {month: 'long', year: 'numeric'}) + '</span><button class="calendar-nav" id="nextMonthBtn">&gt;</button></div><div class="calendar-weekdays"><span>pon</span><span>wt</span><span>sr</span><span>czw</span><span>pt</span><span>sob</span><span>ndz</span></div><div class="calendar-days">';
+        var off = sw === 0 ? 6 : sw - 1;
+        for (var i = 0; i < off; i++) h += '<div class="calendar-day other-month"></div>';
+        for (var d = 1; d <= dim; d++) {
+            var dobj = new Date(y, m, d), ds = formatDatePL(dobj), it = dobj.getTime() === today.getTime();
+            var av = isDateAvailable(ds), bk = bookedDates.has(ds), ps = isDateInPast(ds), be = isDateMoreThan3Months(ds);
+            var sel = (calendarMode === 'single' ? tempSelectedDate : subSelectedDate) === ds;
+            var subSel = calendarMode === 'subscription' && subDates.some(function(sd) { return sd && sd.date === ds; }) && ds !== subSelectedDate;
+            var cl = '', clk = '';
+            if (ps || be) cl = 'disabled';
+            else if (bk) cl = 'booked';
+            else if (av) { cl = 'available'; clk = 'onclick="selectCalendarDay(\'' + ds + '\')"'; }
+            if (it) cl += ' today';
+            if (sel) cl += ' selected';
+            if (subSel) cl += ' sub-selected';
+            h += '<div class="calendar-day ' + cl + '" ' + clk + '>' + d + '</div>';
+        }
+        h += '</div>';
+        var csd = calendarMode === 'single' ? tempSelectedDate : subSelectedDate;
+        if (csd && isDateAvailable(csd)) {
+            var csh = calendarMode === 'single' ? tempSelectedHour : subSelectedHour;
+            h += '<div class="hours-container"><div class="hours-title">Dostepne godziny</div><div class="hours-grid">';
+            generateHours().forEach(function(hr) {
+                h += '<button class="hour-btn ' + (csh === hr ? 'selected-hour' : '') + '" onclick="selectHour(\'' + hr + '\')">' + hr + '</button>';
+            });
+            h += '</div></div>';
+        }
+        h += '<button class="select-date-btn" id="confirmRealDateBtn">Potwierdz date i godzine</button>';
+        datePickerContent.innerHTML = h;
+        var pb = document.getElementById('prevMonthBtn'); if (pb && cp) pb.addEventListener('click', function() { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth()-1); renderCalendar(); });
+        var nb = document.getElementById('nextMonthBtn'); if (nb) nb.addEventListener('click', function() {
+            var nm = new Date(calendarCurrentDate); nm.setMonth(nm.getMonth()+1);
+            var tml = new Date(getTodayInPoland()); tml.setMonth(tml.getMonth()+3);
+            if (nm <= tml) { calendarCurrentDate.setMonth(calendarCurrentDate.getMonth()+1); renderCalendar(); }
+            else showToast('Mozna rezerwowac tylko na 3 miesiace do przodu', 'warning');
+        });
+        var cb = document.getElementById('confirmRealDateBtn'); if (cb) cb.addEventListener('click', function() {
+            var sd = calendarMode === 'single' ? tempSelectedDate : subSelectedDate, sh = calendarMode === 'single' ? tempSelectedHour : subSelectedHour;
+            if (sd && sh) {
+                if (calendarMode === 'single') {
+                    selectedDate = sd; selectedHour = sh;
+                    selectedDateDisplay.innerText = sd + ' ' + sh;
+                    selectedDateDisplay.classList.remove('highlight-error');
+                } else {
+                    subDates[currentSubDateIndex] = {date: sd, hour: sh};
+                    updateSubDatesList();
+                    subscriptionDatesBox.classList.remove('highlight-error');
+                }
+                closeDatePicker();
+                showToast('Wybrano: ' + sd + ' o ' + sh, 'success');
+                anyFieldEdited = true; updateSaveButtonState(); updateSubmitButtonState();
+            } else if (sd && !sh) showToast('Wybierz godzine', 'warning');
+            else showToast('Wybierz dzien w kalendarzu', 'warning');
+        });
+    }
+    window.selectCalendarDay = function(ds) { if (calendarMode === 'single') { tempSelectedDate = ds; tempSelectedHour = null; } else { subSelectedDate = ds; subSelectedHour = null; } renderCalendar(); };
+    window.selectHour = function(h) { if (calendarMode === 'single') tempSelectedHour = h; else subSelectedHour = h; renderCalendar(); };
+    function openDatePickerInternal() {
+        var sd = calendarMode === 'single' ? (selectedDate || formatDatePL(getTomorrowInPoland())) : (subSelectedDate || formatDatePL(getTomorrowInPoland()));
+        var p = sd.split('-'); calendarCurrentDate = new Date(+p[2], +p[1]-1, +p[0]);
+        renderCalendar(); datePickerOverlay.classList.add('open'); document.body.style.overflow = 'hidden';
+    }
+    function openDatePicker() { calendarMode = 'single'; tempSelectedDate = selectedDate; tempSelectedHour = selectedHour; datePickerTitle.innerText = 'Wybierz dzien sprzatania'; openDatePickerInternal(); }
+    function closeDatePicker() { datePickerOverlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+    // SAVE / LOAD
+    function isAnyFormFieldFilled() { return document.getElementById('firstName').value.trim() || document.getElementById('lastName').value.trim() || document.getElementById('email').value.trim() || document.getElementById('address').value.trim() || document.getElementById('confirmTextInput').value.trim() || document.getElementById('orderNotes').value.trim() || selectedDate || clientType || subDates.some(function(d) { return d; }); }
+    function isOrderFormFilled() { return isAnyFormFieldFilled() || document.getElementById('acceptTermsCheckbox').checked; }
+    function updateSaveButtonState() { var hd = isAnyFormFieldFilled(), hs = localStorage.getItem('savedOrderForm'); if (anyFieldEdited || hd) saveDataBtn.innerHTML = 'Zapamietaj dane'; else if (hs) saveDataBtn.innerHTML = 'Wstaw zapisane dane'; else saveDataBtn.innerHTML = 'Zapamietaj dane'; }
+    function clearOrderFormData() {
+        document.getElementById('firstName').value = ''; document.getElementById('lastName').value = ''; document.getElementById('email').value = ''; document.getElementById('address').value = '';
+        document.getElementById('confirmTextInput').value = ''; document.getElementById('acceptTermsCheckbox').checked = false; document.getElementById('orderNotes').value = '';
+        document.getElementById('confirmAbonamentText').value = ''; document.getElementById('acceptAbonamentTerms').checked = false;
+        selectedDate = null; selectedHour = null; selectedDateDisplay.innerText = 'Nie wybrano daty'; tempSelectedDate = null; tempSelectedHour = null;
+        subSelectedDate = null; subSelectedHour = null; subDates = [null, null, null, null, null, null]; calculatedPrice = null; anyFieldEdited = false;
+        subscriptionType = 'single'; document.getElementById('subSingle').classList.add('active'); document.getElementById('subAbonament').classList.remove('active');
+        document.getElementById('calcOsoba').classList.remove('active'); document.getElementById('calcFirma').classList.remove('active');
+        document.getElementById('osobaPriceDisplay').classList.remove('show'); document.getElementById('firmaPriceDisplay').classList.remove('show');
+        document.getElementById('osobaDiscountBlock').style.display = 'none'; document.getElementById('firmaDiscountBlock').style.display = 'none';
+        updateSubscriptionUI(); updateSubDatesList(); updateSaveButtonState(); updateSubmitButtonState(); removeAllHighlights();
+    }
+    function saveFormData() {
+        if (!isAnyFormFieldFilled() && !selectedDate) { showToast('Brak danych do zapisu', 'warning'); return; }
+        localStorage.setItem('savedOrderForm', JSON.stringify({
+            clientType: clientType, subscriptionType: subscriptionType, calculatedPrice: calculatedPrice, subDates: subDates,
+            firstName: document.getElementById('firstName').value, lastName: document.getElementById('lastName').value,
+            email: document.getElementById('email').value, address: document.getElementById('address').value,
+            confirmText: document.getElementById('confirmTextInput').value, termsChecked: document.getElementById('acceptTermsCheckbox').checked,
+            orderNotes: document.getElementById('orderNotes').value, selectedDate: selectedDate, selectedHour: selectedHour
+        }));
+        saveDataBtn.innerHTML = 'Zapamietano';
+        if (saveButtonTimeout) clearTimeout(saveButtonTimeout);
+        saveButtonTimeout = setTimeout(function() { anyFieldEdited = false; updateSaveButtonState(); }, 2000);
+        showToast('Dane zostaly zapamietane!', 'success');
+    }
+    function loadSavedData() {
+        var s = localStorage.getItem('savedOrderForm');
+        if (!s) { showToast('Brak zapisanych danych', 'warning'); return; }
+        try {
+            var d = JSON.parse(s);
+            document.getElementById('firstName').value = d.firstName || ''; document.getElementById('lastName').value = d.lastName || '';
+            document.getElementById('email').value = d.email || ''; document.getElementById('address').value = d.address || '';
+            document.getElementById('confirmTextInput').value = d.confirmText || ''; document.getElementById('acceptTermsCheckbox').checked = d.termsChecked || false;
+            document.getElementById('orderNotes').value = d.orderNotes || '';
+            if (d.selectedDate && d.selectedHour) { selectedDate = d.selectedDate; selectedHour = d.selectedHour; selectedDateDisplay.innerText = selectedDate + ' ' + selectedHour; }
+            anyFieldEdited = false; updateSaveButtonState(); updateSubmitButtonState(); removeAllHighlights();
+            showToast('Wczytano zapisane dane', 'success');
+        } catch(e) {}
+    }
+    function handleSaveOrLoad() { if (anyFieldEdited || isAnyFormFieldFilled()) saveFormData(); else if (localStorage.getItem('savedOrderForm')) loadSavedData(); else saveFormData(); }
+    function submitOrder() {
+        removeAllHighlights();
+        if (!isFormComplete()) { highlightMissingFields(); showMissingFieldsMessage(); return; }
+        confirmationModalEl.classList.add('active'); blurBg.classList.add('active'); document.body.style.overflow = 'hidden';
+        orderPageDiv.classList.remove('active'); switchTab('home');
+        if (confirmationTimeout) clearTimeout(confirmationTimeout);
+        confirmationTimeout = setTimeout(closeConfirmationModal, 8000);
+    }
+    function closeConfirmationModal() { confirmationModalEl.classList.remove('active'); blurBg.classList.remove('active'); document.body.style.overflow = ''; if (confirmationTimeout) { clearTimeout(confirmationTimeout); confirmationTimeout = null; } }
+    function showToast(msg, type) {
+        type = type || 'error';
+        if (toastTimeout) clearTimeout(toastTimeout);
+        floatingToast.innerText = msg;
+        floatingToast.className = 'floating-message show toast-' + type;
+        toastTimeout = setTimeout(function() { floatingToast.classList.remove('show', 'toast-error', 'toast-warning', 'toast-success'); }, 4000);
+    }
+
+    // MODAL LOGOWANIA
+    function showModal() { if (isLoggedIn) return; modal.classList.add('active'); blurBg.classList.add('active'); document.body.style.overflow = 'hidden'; modalError.innerText = ''; modalError.classList.remove('show'); }
+    function hideModal() { modal.classList.remove('active'); blurBg.classList.remove('active'); document.body.style.overflow = ''; }
+    function setErrorMsg(msg) { modalError.innerText = msg; modalError.classList.add('show'); setTimeout(function() { if (modalError.innerText === msg) modalError.classList.remove('show'); }, 2000); }
+    function validateInputs() { var u = usernameInput.value.trim(), p = passwordInput.value; if (!u && !p) return 'Nieprawidlowe imie i haslo'; if (!u) return 'Nieprawidlowe imie'; if (!p) return 'Nieprawidlowe haslo'; return null; }
+    var pwt = null;
+    function setupPasswordMasking() {
+        var ri = passwordInput;
+        function um() {
+            var c = ri.value;
+            if (c.length < 2) { ri.type = 'text'; return; }
+            var nv = '*'.repeat(c.length - 1) + c[c.length - 1];
+            if (ri.value !== nv) { var cp = ri.selectionStart; ri.value = nv; ri.setSelectionRange(cp, cp); }
+            ri.type = 'text';
+            if (pwt) clearTimeout(pwt);
+            pwt = setTimeout(function() { if (ri.value === nv && ri.value.length > 1) { var fm = '*'.repeat(ri.value.length); ri.value = fm; ri.setSelectionRange(fm.length, fm.length); } }, 500);
+        }
+        ri.removeEventListener('input', um); ri.addEventListener('input', function() { setTimeout(um, 10); }); um();
+    }
+    function handleAuth() { var e = validateInputs(); if (e) { setErrorMsg(e); return; } isLoggedIn = true; loginStatusSpan.innerText = 'Wyloguj sie'; hideModal(); usernameInput.value = ''; passwordInput.value = ''; modalError.innerText = ''; modalError.classList.remove('show'); showToast('Zalogowano pomyslnie!', 'success'); setTimeout(setupPasswordMasking, 50); }
+    function logout() { isLoggedIn = false; loginStatusSpan.innerText = 'Zaloguj sie'; showToast('Wylogowano pomyslnie.', 'error'); }
+    function setModalMode(mode) {
+        currentMode = mode;
+        if (mode === 'login') { nameLabel.innerText = 'Wirtualne imie'; passLabel.innerText = 'Haslo'; usernameInput.placeholder = 'Wprowadz imie'; passwordInput.placeholder = 'Wprowadz haslo'; submitBtn.innerText = 'Zaloguj'; }
+        else { nameLabel.innerText = 'Wirtualne imie'; passLabel.innerText = 'Haslo'; usernameInput.placeholder = 'Wprowadz nowe imie'; passwordInput.placeholder = 'Wprowadz nowe haslo'; submitBtn.innerText = 'Zarejestruj'; }
+        modalError.innerText = ''; modalError.classList.remove('show'); setupPasswordMasking();
+    }
+    function downloadRegulamin() { var b = new Blob(['REGULAMIN SWIADCZENIA USLUG SPRZATANIA\n\n1. Postanowienia ogolne.\n2. Zakres uslug.\n3. Rezerwacja i odwolanie.\n4. Platnosci.\n5. Odpowiedzialnosc.\n6. Reklamacje.\n7. Postanowienia koncowe.'], {type: 'application/pdf'}); var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = 'regulamin_uslug.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('Pobieranie regulaminu...', 'success'); }
+    function downloadAbonamentRegulamin() { var b = new Blob(['REGULAMIN ABONAMENTU\n\nSzczegoly dotyczace abonamentu, warunki przerwania, oplate.'], {type: 'application/pdf'}); var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = 'regulamin_abonamentu.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('Pobieranie regulaminu abonamentu...', 'success'); }
+
+    function closeOrderPage() { if (isOrderFormFilled()) showOrderAbandonedMessage(); orderPageDiv.classList.remove('active'); document.body.style.overflow = ''; }
+    function showOrderAbandonedMessage() { showToast('Rezerwacja zostala przerwana.', 'error'); }
+
+    // EVENTY
+    loginTrigger.addEventListener('click', function(e) { e.stopPropagation(); isLoggedIn ? logout() : showModal(); });
+    closeModalBtn.addEventListener('click', hideModal); blurBg.addEventListener('click', hideModal);
+    tabBtns.forEach(function(b) { b.addEventListener('click', function() { tabBtns.forEach(function(x) { x.classList.remove('active'); }); b.classList.add('active'); setModalMode(b.getAttribute('data-mode')); }); });
+    submitBtn.addEventListener('click', handleAuth);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) hideModal();
+        if (e.key === 'Escape' && clientTypeOverlay.classList.contains('active')) closeClientTypeOverlay();
+        if (e.key === 'Escape' && orderPageDiv.classList.contains('active')) closeOrderPage();
+        if (e.key === 'Escape' && datePickerOverlay.classList.contains('open')) closeDatePicker();
+        if (e.key === 'Escape' && confirmationModalEl.classList.contains('active')) closeConfirmationModal();
+    });
+    orderFromMenuBtn.addEventListener('click', function(e) { e.preventDefault(); openClientTypeOverlay(); });
+    closeOrderBtn.addEventListener('click', closeOrderPage);
+    downloadPdfBtn.addEventListener('click', downloadRegulamin);
+    document.getElementById('downloadAbonamentPdfBtn').addEventListener('click', downloadAbonamentRegulamin);
+    saveDataBtn.addEventListener('click', handleSaveOrLoad); submitOrderBtn.addEventListener('click', submitOrder);
+    closeConfirmationBtn.addEventListener('click', closeConfirmationModal);
+    openDatePickerBtn.addEventListener('click', openDatePicker); closeDatePickerBtn.addEventListener('click', closeDatePicker);
+    document.getElementById('btnClientOsoba').addEventListener('click', function() { selectClientType('osoba'); });
+    document.getElementById('btnClientFirma').addEventListener('click', function() { selectClientType('firma'); });
+    document.getElementById('closeClientTypeBtn').addEventListener('click', closeClientTypeOverlay);
+    document.getElementById('subSingle').addEventListener('click', function() { setSubscription('single'); });
+    document.getElementById('subAbonament').addEventListener('click', function() { setSubscription('abonament'); });
+    ['roomsSelect', 'osobaTypSprzatania', 'osobaChemia'].forEach(function(id) { document.getElementById(id).addEventListener('change', calculateOsobaPrice); });
+    ['firmaRodzaj', 'firmaTypSprzatania', 'firmaChemia'].forEach(function(id) { document.getElementById(id).addEventListener('change', calculateFirmaPrice); });
+    document.getElementById('firmaMetry').addEventListener('input', calculateFirmaPrice);
+    ['firstName', 'lastName', 'email', 'address', 'confirmTextInput', 'orderNotes', 'confirmAbonamentText'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', function() { anyFieldEdited = true; updateSaveButtonState(); updateSubmitButtonState(); removeAllHighlights(); });
+    });
+    ['acceptTermsCheckbox', 'acceptAbonamentTerms'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', function() { anyFieldEdited = true; updateSaveButtonState(); updateSubmitButtonState(); removeAllHighlights(); });
+    });
+
+    window.openOrderPage = function() { openClientTypeOverlay(); };
+    window.callNow = function() { window.location.href = 'tel:+48123456789'; };
+    window.showInfo = function(m) { showToast(m, 'warning'); };
+
+    function toggleBottomMenu() { document.getElementById('bottomMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
+    function switchTabFromMenu(id) { toggleBottomMenu(); switchTab(id); }
+    function clearBlurAndScale() {
+        if (activePhotoId) { var el = document.getElementById(activePhotoId); if (el) el.classList.remove('sharp-and-big'); activePhotoId = null; }
+        blurBg.classList.remove('active'); if (activeBlurTimeout) clearTimeout(activeBlurTimeout);
+    }
+    function showBlurAndScalePhoto(pid, src) {
+        if (currentTab === 'faq' && src === 'faq') return;
+        clearBlurAndScale();
+        var fn = function() {
+            var t = document.getElementById(pid);
+            if (t) { t.scrollIntoView({behavior: 'smooth', block: 'center'}); t.classList.add('sharp-and-big'); activePhotoId = pid; blurBg.classList.add('active'); activeBlurTimeout = setTimeout(clearBlurAndScale, 2000); }
+        };
+        if (currentTab !== 'faq') { switchTab('faq'); setTimeout(fn, 200); } else fn();
+    }
+    window.triggerTransition = function(pid) { showBlurAndScalePhoto(pid, 'external'); };
+    window.toggleDescription = function(id) { document.getElementById(id).classList.toggle('show'); };
+    window.toggleAccordion = function(el) { var it = el.closest('.accordion-item'); it.classList.toggle('active'); it.querySelector('.accordion-toggle').innerHTML = it.classList.contains('active') ? '\u2212' : '+'; };
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+        var hero = document.getElementById('heroContainer'), content = document.getElementById('dynamicContent');
+        document.querySelectorAll('.bottom-menu-items a[data-tab]').forEach(function(link) { link.classList.toggle('active', link.getAttribute('data-tab') === tabId); });
+
+        if (tabId === 'home') {
+            hero.innerHTML = '<div class="hero-image" style="position:relative"><img src="MainWidget.JPG" alt="Sprzatanie"><div class="hero-main-overlay"><div><div class="hero-title-line dark-blue">Profesjonalne</div><div class="hero-title-line light-blue">sprzatanie</div><div class="hero-title-line dark-blue">w Warszawie</div><div class="hero-title-line dark-blue">i okolicach</div></div><div class="hero-buttons-bottom"><button class="btn btn-primary" onclick="openOrderPage()">Zamow sprzatanie</button><button class="btn btn-secondary" onclick="showInfo(\'Nasze realizacje\')">Nasze realizacje</button></div></div></div>';
+            content.innerHTML = '<div class="section-with-lines">Nasze uslugi</div><div class="services-vertical"><div class="service-card"><h4>Sprzatanie mieszkan i terenow prywatnych</h4><p>Regularne i generalne sprzatanie mieszkan, domow i prywatnych przestrzeni.</p><button class="service-btn" onclick="triggerTransition(\'photo1\')">Szczegoly</button></div><div class="service-card"><h4>Dwie opcje sprzatania</h4><p>Sprzatamy z uzyciem zwyklej chemii lub srodkow bio. Wybor nalezy do Ciebie.</p><button class="service-btn" onclick="triggerTransition(\'photo2\')">Szczegoly</button></div><div class="service-card"><h4>Wlasny sprzet</h4><p>Korzystamy z wlasnego profesjonalnego sprzetu i wysokiej jakosci srodkow czystosci.</p><button class="service-btn" onclick="triggerTransition(\'photo3\')">Szczegoly</button></div><div class="service-card"><h4>Latwa rezerwacja online</h4><p>Zarezerwuj sprzatanie wygodnie online w dogodnym dla Ciebie terminie.</p><button class="service-btn" onclick="triggerTransition(\'photo4\')">Szczegoly</button></div></div><div class="section-with-lines">Dlaczego wybieraja nas</div><div class="info-cards-grid"><div class="info-card"><h4>Wygodne obliczanie kosztow</h4><p>Obliczamy koszt sprzatania za m&sup2;. Placisz tylko za rzeczywista powierzchnie &mdash; uczciwie i przejrzyzcie.</p></div><div class="info-card"><h4>Bezpieczenstwo</h4><p>Nasi pracownicy nosza kamery na piersi, co zapewnia bezpieczenstwo.</p></div><div class="info-card"><h4>Elastyczny harmonogram</h4><p>Elastyczny grafik, ktory mozesz wybrac przy rezerwacji w dogodnym dla Ciebie czasie.</p></div></div>';
+        } else if (tabId === 'services') {
+            hero.innerHTML = '<div class="hero-image" style="position:relative"><img src="MainWidget1.jpg" alt="Uslugi"><div class="hero-text-overlay"><div class="hero-widget1-title"><div class="dark-blue">Wybierz</div><div class="light-blue">Odpowiednia</div><div class="dark-blue">Opcje</div><div class="light-blue">dla Siebie</div></div></div></div>';
+            content.innerHTML = '<div class="section-with-lines">Dla klientow indywidualnych</div><div class="price-description">Cena zalezy od liczby pokoi</div><div class="price-table-wrapper" id="table1"><table class="price-table"><thead><tr><th>Liczba pokoi</th><th class="col-chem">Powierzchniowe sprzatanie<br>chemia gospodarcza</th><th class="col-biochem">Powierzchniowe sprzatanie<br>biochemia</th><th class="col-general-chem">Generalne sprzatanie<br>chemia gospodarcza</th><th class="col-general-biochem">Generalne sprzatanie<br>biochemia</th></tr></thead><tbody><tr><td class="first-col">Kawalerka</td><td class="chem-price">199 zl</td><td class="biochem-price">239 zl</td><td class="general-chem-price">349 zl</td><td class="general-biochem-price">399 zl</td></tr><tr><td class="first-col">2 pokoje</td><td class="chem-price">279 zl</td><td class="biochem-price">329 zl</td><td class="general-chem-price">479 zl</td><td class="general-biochem-price">549 zl</td></tr><tr><td class="first-col">3 pokoje</td><td class="chem-price">359 zl</td><td class="biochem-price">419 zl</td><td class="general-chem-price">599 zl</td><td class="general-biochem-price">679 zl</td></tr></tbody></table></div><div class="biochemia-section" onclick="toggleDescription(\'bioDesc\')"><span class="info-icon">i</span><span>Biochemia to bezpieczne srodki</span></div><div id="bioDesc" class="toggle-description"><p>Ekologiczne, bezpieczne dla ludzi i zwierzat.</p></div><div class="section-with-lines">Dla firm</div><div class="price-description">Cena za m&sup2;</div><div class="price-table-wrapper" id="table2"><table class="price-table"><thead><tr><th>Rodzaj obiektu</th><th class="col-chem">Powierzchniowe sprzatanie<br>chemia gospodarcza</th><th class="col-biochem">Powierzchniowe sprzatanie<br>biochemia</th><th class="col-general-chem">Generalne sprzatanie<br>chemia gospodarcza</th><th class="col-general-biochem">Generalne sprzatanie<br>biochemia</th></tr></thead><tbody><tr><td class="first-col">Biura</td><td class="chem-price">7 zl/m&sup2;</td><td class="biochem-price">9 zl/m&sup2;</td><td class="general-chem-price">13 zl/m&sup2;</td><td class="general-biochem-price">16 zl/m&sup2;</td></tr><tr><td class="first-col">Gastronomia</td><td class="chem-price">9 zl/m&sup2;</td><td class="biochem-price">11 zl/m&sup2;</td><td class="general-chem-price">16 zl/m&sup2;</td><td class="general-biochem-price">19 zl/m&sup2;</td></tr><tr><td class="first-col">Warsztaty</td><td class="chem-price">8 zl/m&sup2;</td><td class="biochem-price">10 zl/m&sup2;</td><td class="general-chem-price">14 zl/m&sup2;</td><td class="general-biochem-price">17 zl/m&sup2;</td></tr><tr><td class="first-col">Hotele</td><td class="chem-price">6 zl/m&sup2;</td><td class="biochem-price">8 zl/m&sup2;</td><td class="general-chem-price">11 zl/m&sup2;</td><td class="general-biochem-price">14 zl/m&sup2;</td></tr></tbody></table></div><div class="biochemia-section" onclick="toggleDescription(\'cenaDesc\')"><span class="info-icon">i</span><span>Cena zalezy od powierzchni</span></div><div id="cenaDesc" class="toggle-description"><p>Indywidualna wycena dla firm.</p></div><div class="section-with-lines">Gwarantujemy</div><div class="white-frame-cards"><div class="white-frame-card"><h4>Elastyczne terminy</h4><p>Dopasujemy sie do Twojego harmonogramu</p></div><div class="white-frame-card"><h4>Bezpieczenstwo</h4><p>Nasi pracownicy sa sprawdzani i nosza kamery na piersi podczas sprzatania</p></div><div class="white-frame-card"><h4>Gwarancja jakosci</h4><p>Sprzatamy dokladnie i profesjonalnie</p></div></div>';
+            setTimeout(function() {
+                var t1 = document.getElementById('table1'); if (t1) t1.addEventListener('click', function() { triggerTransition('photo1'); });
+                var t2 = document.getElementById('table2'); if (t2) t2.addEventListener('click', function() { triggerTransition('photo1'); });
+            }, 50);
+        } else if (tabId === 'about') {
+            hero.innerHTML = '<div class="hero-image" style="position:relative"><img src="MainWidget2.jpg" alt="O nas"><div class="hero-text-overlay2"><div class="hero-widget2-title"><div class="light-blue">Czystosc</div><div class="dark-blue">ktorej</div><div class="dark-blue">mozesz</div><div class="light-blue">zaufac</div></div></div></div>';
+            content.innerHTML = '<div class="under-construction"><h2>O nas</h2><p>Wiecej informacji wktrotce.</p></div>';
+        } else if (tabId === 'faq') {
+            hero.innerHTML = '<div class="hero-image" style="position:relative"><img src="MainWidget3.jpg" alt="FAQ"><div class="hero-text-overlay3"><div class="hero-title-large dark-blue">Pytania<br>i odpowiedzi</div></div></div>';
+            content.innerHTML = '<div class="faq-header-section"><div class="faq-title-wrapper"><div class="blue-line"></div><div class="faq-title">Najczestsze pytania</div><div class="blue-line"></div></div></div><div class="accordion-container"><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Jak przebiega zamowienie sprzatania?</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">Zamowienie mozna zlozyc telefonicznie, przez media spolecznosciowe lub przez strone.</div></div></div><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Jak dzialaja znizki?</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">10% na pierwsze sprzatanie, 12,5% przy umowie na 8 wizyt.</div></div></div><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Jakich srodkow uzywamy?</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">Karcher, Grass, Pro-Brite, Synergetic, HG.</div></div></div><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Jak dziala gwarancja?</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">Klient sprawdza jakosc, ewentualne uwagi poprawiamy od razu.</div></div></div><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Bezpieczne sprzatanie</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">Kamery nasobne dla bezpieczenstwa.</div></div></div><div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)"><div class="accordion-title">Co oznacza sprzatanie powierzchniowe?</div><div class="accordion-toggle">+</div></div><div class="accordion-content"><div class="accordion-content-inner">Powierzchniowe &ndash; widoczne powierzchnie. Generalne &ndash; takze wnetrza mebli.</div></div></div></div><div class="faq-header-section"><div class="faq-title-wrapper"><div class="blue-line"></div><div class="faq-title">Wazne pytania</div><div class="blue-line"></div></div></div><div class="about-widgets-container"><div class="about-widget" id="photo1"><div class="widget-title"><span class="widget-number">1</span> Sprzatanie mieszkan i terenow prywatnych</div><div class="widget-description">Dzialamy na terenie Polski, wystawiamy faktury VAT. Sprzatamy mieszkania, domy, firmy. Cena wedlug liczby pokoi lub m&sup2;.</div></div><div class="about-widget" id="photo2"><div class="widget-title"><span class="widget-number">2</span> Dwie opcje sprzatania</div><div class="widget-description">Standardowe (chemia) lub ekologiczne (biochemia). Biochemia bezpieczna dla dzieci i zwierzat.</div></div><div class="about-widget" id="photo3"><div class="widget-title"><span class="widget-number">3</span> Wlasny sprzet</div><div class="widget-description">Przyjezdzamy z wlasnym profesjonalnym sprzetem i srodkami. Klient nic nie zapewnia.</div></div><div class="about-widget" id="photo4"><div class="widget-title"><span class="widget-number">4</span> Latwa rezerwacja online</div><div class="widget-description">Rezerwacja przez telefon, social media lub formularz online 24/7.</div></div><div class="about-widget" id="photo5"><div class="widget-title"><span class="widget-number">5</span> Bezpieczenstwo</div><div class="widget-description">Kamery nasobne &ndash; rejestrujemy caly proces sprzatania.</div></div><div class="about-widget" id="photo6"><div class="widget-title"><span class="widget-number">6</span> Gwarancja jakosci</div><div class="widget-description">Protokol przed sprzataniem, platnosc po akceptacji klienta.</div></div></div>';
+            setTimeout(function() { for (var i = 1; i <= 6; i++) { var w = document.getElementById('photo' + i); if (w) w.style.cursor = 'default'; } }, 50);
+        }
+    }
+
+    // INICJALIZACJA
+    switchTab('home');
+    setupPasswordMasking();
+    updateSubmitButtonState();
+</script>
+</body>
+</html>
